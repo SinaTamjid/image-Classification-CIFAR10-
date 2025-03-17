@@ -1,47 +1,44 @@
 import tensorflow as tf
+from keras.api.layers import Dense,Input,Conv2D,MaxPooling2D,Flatten,Dropout,BatchNormalization
+from keras.api.models import Sequential,Model
 from keras.api.datasets import cifar10
-from keras.api.utils import to_categorical
-from keras.api.layers import Conv2D,MaxPooling2D,Flatten,Dense,Dropout
-from keras.api.models import Sequential
-from keras._tf_keras.keras.preprocessing.image import ImageDataGenerator
+from keras.api.losses import SparseCategoricalCrossentropy
+from keras.api.optimizers import Adam
+from keras.api.activations import relu
+from keras.api.regularizers import l2
 
 (X_train,y_train),(X_test,y_test)=cifar10.load_data()
 
-X_train=X_train.astype('float')/255.0
-X_test=X_test.astype('float')/255.0
+X_train=X_train.astype("float32")/255.0
+X_test=X_test.astype("float32")/255.0
 
-y_train=to_categorical(y_train,10)
-y_test=to_categorical(y_test,10)
+def my_model():
+    inputs = Input(shape=(32, 32, 3))
+    x = Conv2D(32, 3,padding='same',kernel_regularizer=l2(0.01))(inputs)
+    x = BatchNormalization()(x)
+    x = relu(x)
+    x = MaxPooling2D()(x) 
+    x = Conv2D(64, 5, padding='same',kernel_regularizer=l2(0.01))(x)  
+    x = BatchNormalization()(x)
+    x = relu(x)
+    x = MaxPooling2D()(x) 
+    x = Conv2D(128, 3,padding='same',kernel_regularizer=l2(0.01))(x)
+    x = BatchNormalization()(x)
+    x = relu(x)
+    x = MaxPooling2D()(x) 
+    x = Flatten()(x)
+    x = Dense(64, activation='relu',kernel_regularizer=l2(0.01))(x)  
+    Dropout(0.5)
+    outputs = Dense(10)(x)
+    model = Model(inputs=inputs, outputs=outputs)
+    return model
 
-datagen = ImageDataGenerator(
-    rotation_range=20,
-    width_shift_range=0.2,
-    height_shift_range=0.2,
-    horizontal_flip=True
-)
-
-datagen.fit(X_train)
-
-model=Sequential()
-               #convolutional layer
-model.add(Conv2D(32,(3,3),activation='relu',input_shape=(32,32,3)))
-model.add(MaxPooling2D(2,2))
-model.add(Conv2D(64,(3,3),activation='relu'))
-model.add(MaxPooling2D(2,2))
-model.add(Conv2D(128,(3,3),activation='relu'))
-model.add(MaxPooling2D(2,2))
-
-#connected layer
-model.add(Flatten())
-model.add(Dense(512,activation='relu'))
-model.add(Dropout(0.3))
-model.add(Dense(10,activation='softmax'))
+model=my_model()
 
 
-model.compile(loss='categorical_crossentropy',optimizer='adam',metrics=['accuracy'])
-model.fit(X_train,y_train,epochs=20,verbose=2,batch_size=64,validation_data=(X_test,y_test))
+loss=SparseCategoricalCrossentropy(from_logits=True)
+model.compile(loss=loss,optimizer=Adam(learning_rate=3e-4),metrics=['accuracy'])
 
-#evaluation
-
-loss,accuracy=model.evaluate(X_test,y_test)
-print(f"Test accuracy is : {accuracy}")
+model.fit(X_train,y_train,batch_size=64,epochs=30,verbose=2)
+model.evaluate(X_test,y_test,batch_size=64,verbose=2)
+print(model.summary())
