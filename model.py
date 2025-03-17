@@ -39,6 +39,6 @@ model=my_model()
 loss=SparseCategoricalCrossentropy(from_logits=True)
 model.compile(loss=loss,optimizer=Adam(learning_rate=3e-4),metrics=['accuracy'])
 
-model.fit(X_train,y_train,batch_size=64,epochs=30,verbose=2)
+model.fit(X_train,y_train,batch_size=64,epochs=150,verbose=2)
 model.evaluate(X_test,y_test,batch_size=64,verbose=2)
 print(model.summary())
